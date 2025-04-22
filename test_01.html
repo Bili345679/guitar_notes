@@ -1,0 +1,91 @@
+<!-- 初版 -->
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吉他指板音名生成</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>吉他指板音名生成</h1>
+    <table id="guitarTable">
+        <thead>
+            <tr>
+                <th>弦</th>
+                <th>空弦</th>
+                <th>第1品</th>
+                <th>第2品</th>
+                <th>第3品</th>
+                <th>第4品</th>
+                <!-- 可根据需要扩展更多品格 -->
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 表格内容会通过JS动态生成 -->
+        </tbody>
+    </table>
+
+    <script>
+        // 半音的顺序关系
+        const chromaticScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        // 每根弦的空弦音名（EADGBE标准调弦）
+        const openStrings = ['E', 'B', 'G', 'D', 'A', 'E'];
+
+        // 计算某音名的下一个音名（递增一个半音）
+        function getNextNote(currentNote, steps) {
+            const currentIndex = chromaticScale.indexOf(currentNote);
+            const nextIndex = (currentIndex + steps) % chromaticScale.length; // 防止索引越界
+            return chromaticScale[nextIndex];
+        }
+
+        // 生成每根弦的音名列表
+        function generateFretNotes(openString) {
+            const fretNotes = [];
+            for (let fret = 0; fret <= 22; fret++) { // 生成前5品的音名
+                fretNotes.push(getNextNote(openString, fret));
+            }
+            return fretNotes;
+        }
+
+        // 动态生成表格内容
+        function generateTable() {
+            const tableBody = document.querySelector('#guitarTable tbody');
+            tableBody.innerHTML = ''; // 清空表格内容
+
+            openStrings.forEach((openString, index) => {
+                const fretNotes = generateFretNotes(openString);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>第${index + 1}弦</td>
+                    ${fretNotes.map(note => `<td>${note}</td>`).join('')}
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // 页面加载时生成表格
+        generateTable();
+    </script>
+</body>
+
+</html>

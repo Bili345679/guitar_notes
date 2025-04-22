@@ -1,0 +1,152 @@
+<!-- 增加声音播放 -->
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吉他指板音名与声音播放</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            height: 100vh;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            /* 表格单元格可点击 */
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .highlight-lightblue {
+            background-color: #add8e6;
+            /* 淡蓝色 */
+        }
+
+        .highlight-pink {
+            background-color: #ffc0cb;
+            /* 粉色 */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>吉他指板音名与声音播放</h1>
+
+    <label for="fretCount">选择品格数量（最多24）：</label>
+    <input type="number" id="fretCount" value="24" min="1" max="24" onchange="updateTable()" />
+
+    <table id="guitarTable">
+        <thead>
+            <tr id="tableHeader">
+                <th>弦</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 表格内容通过JS动态生成 -->
+        </tbody>
+    </table>
+
+    <script>
+        // 半音的顺序关系
+        const chromaticScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        // 每根弦的空弦音名与八度标记（EADGBE）
+        const openStrings = [
+            { note: 'E', octave: 4 },
+            { note: 'B', octave: 3 },
+            { note: 'G', octave: 3 },
+            { note: 'D', octave: 3 },
+            { note: 'A', octave: 2 },
+            { note: 'E', octave: 2 }
+        ];
+
+        const baseFrequency = 440; // A4的频率
+
+        // 计算音符频率
+        function calculateFrequency(note, octave) {
+            const noteIndex = chromaticScale.indexOf(note);
+            const A4Index = chromaticScale.indexOf('A') + (4 * 12); // A4为参考点
+            const currentIndex = noteIndex + (octave * 12);
+            const semitoneDistance = currentIndex - A4Index;
+            return baseFrequency * Math.pow(2, semitoneDistance / 12);
+        }
+
+        // 播放声音
+        function playSound(frequency) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = 'sine'; // 正弦波
+            oscillator.frequency.value = frequency; // 设置频率
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 1); // 渐弱
+            oscillator.stop(audioContext.currentTime + 1); // 1秒后停止
+        }
+
+        // 更新表头
+        function updateTableHeader(fretCount) {
+            const headerRow = document.getElementById('tableHeader');
+            headerRow.innerHTML = '<th>弦</th>';
+            for (let fret = 0; fret < fretCount; fret++) {
+                const th = document.createElement('th');
+                th.textContent = `第${fret + 1}品`;
+                headerRow.appendChild(th);
+            }
+        }
+
+        // 更新表格内容
+        function updateTable() {
+            const fretCount = parseInt(document.getElementById('fretCount').value, 10) || 24;
+
+            updateTableHeader(fretCount);
+
+            const tableBody = document.querySelector('#guitarTable tbody');
+            tableBody.innerHTML = '';
+
+            openStrings.forEach((openString, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>第${index + 1}弦</td>`;
+
+                for (let fret = 0; fret < fretCount; fret++) {
+                    const td = document.createElement('td');
+                    const noteIndex = (chromaticScale.indexOf(openString.note) + fret) % chromaticScale.length;
+                    const octaveOffset = Math.floor((chromaticScale.indexOf(openString.note) + fret) / chromaticScale.length);
+                    const note = chromaticScale[noteIndex];
+                    const octave = openString.octave + octaveOffset;
+                    const frequency = calculateFrequency(note, octave);
+
+                    td.textContent = `${note}${octave}`;
+                    td.onclick = () => playSound(frequency); // 点击播放声音
+
+                    // 添加背景颜色
+                    if (fret === 12) {
+                        td.classList.add('highlight-pink');
+                    } else if ([3, 5, 7, 9, 15, 17, 19, 21, 24].includes(fret)) {
+                        td.classList.add('highlight-lightblue');
+                    }
+
+                    tr.appendChild(td);
+                }
+
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // 页面加载时初始化表格
+        updateTable();
+    </script>
+</body>
+
+</html>

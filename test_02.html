@@ -1,0 +1,113 @@
+<!-- 品格数可选+品格颜色标记 -->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吉他指板音名生成</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .highlight-lightblue {
+            background-color: #add8e6; /* 淡蓝色 */
+        }
+        .highlight-pink {
+            background-color: #ffc0cb; /* 粉色 */
+        }
+    </style>
+</head>
+<body>
+    <h1>吉他指板音名生成（带八度标记）</h1>
+    <label for="fretCount">选择品格数量（最多24）：</label>
+    <input type="number" id="fretCount" value="24" min="1" max="24" onchange="updateTable()" />
+
+    <table id="guitarTable">
+        <thead>
+            <tr id="tableHeader">
+                <th>弦</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 表格内容会通过JS动态生成 -->
+        </tbody>
+    </table>
+
+    <script>
+        // 半音的顺序关系
+        const chromaticScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        // 每根弦的空弦音名及其八度标记（EADGBE标准调弦）
+        const openStrings = [
+            { note: 'E', octave: 4 }, // 第1弦
+            { note: 'B', octave: 3 }, // 第2弦
+            { note: 'G', octave: 3 }, // 第3弦
+            { note: 'D', octave: 3 }, // 第4弦
+            { note: 'A', octave: 2 }, // 第5弦
+            { note: 'E', octave: 2 }  // 第6弦
+        ];
+
+        // 获取带八度标记的音名
+        function getNextNoteWithOctave(note, octave, steps) {
+            const currentIndex = chromaticScale.indexOf(note);
+            const nextIndex = (currentIndex + steps) % chromaticScale.length;
+            const nextOctave = octave + Math.floor((currentIndex + steps) / chromaticScale.length); // 处理八度变化
+            return `${chromaticScale[nextIndex]}${nextOctave}`;
+        }
+
+        // 更新表头内容
+        function updateTableHeader(fretCount) {
+            const headerRow = document.getElementById('tableHeader');
+            headerRow.innerHTML = '<th>弦</th>'; // 重置表头
+            for (let fret = 0; fret < fretCount; fret++) {
+                const th = document.createElement('th');
+                th.textContent = `第${fret + 1}品`;
+                headerRow.appendChild(th);
+            }
+        }
+
+        // 更新表格内容
+        function updateTable() {
+            const fretCount = parseInt(document.getElementById('fretCount').value, 10) || 24;
+            updateTableHeader(fretCount);
+
+            const tableBody = document.querySelector('#guitarTable tbody');
+            tableBody.innerHTML = ''; // 清空表格内容
+
+            openStrings.forEach((openString, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>第${index + 1}弦</td>`;
+
+                for (let fret = 0; fret < fretCount; fret++) {
+                    const td = document.createElement('td');
+                    const noteWithOctave = getNextNoteWithOctave(openString.note, openString.octave, fret);
+
+                    // 添加背景颜色
+                    if (fret === 12) {
+                        td.classList.add('highlight-pink');
+                    } else if ([3, 5, 7, 9, 15, 17, 19, 21, 24].includes(fret)) {
+                        td.classList.add('highlight-lightblue');
+                    }
+
+                    td.textContent = noteWithOctave;
+                    tr.appendChild(td);
+                }
+
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // 页面加载时初始化表格
+        updateTable();
+    </script>
+</body>
+</html>
