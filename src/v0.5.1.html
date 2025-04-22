@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吉他指板音名与唱名生成</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            /* width: 100%; */
+            width: 500vh;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .highlight-lightblue {
+            background-color: #add8e6;
+            /* 淡蓝色 */
+        }
+
+        .highlight-pink {
+            background-color: #ffc0cb;
+            /* 粉色 */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>吉他指板音名与唱名生成（带八度标记）</h1>
+
+    <label for="modeSelect">选择显示模式：</label>
+    <select id="modeSelect" onchange="updateTable()">
+        <option value="notes">音名</option>
+        <option value="solfege">C大调唱名</option>
+    </select>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <label>选择唱名形式：</label>
+    <input type="radio" name="notation" value="doremi" checked onchange="updateTable()" /> do re mi
+    <input type="radio" name="notation" value="numbers" onchange="updateTable()" /> 1 2 3
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    <label for="fretCount">选择品格数量（最多24）：</label>
+    <input type="number" id="fretCount" value="24" min="1" max="24" onchange="updateTable()" />
+    <button id="mode">弹奏模式</button>
+    <table id="guitarTable">
+        <thead>
+            <tr id="tableHeader">
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 表格内容会通过JS动态生成 -->
+        </tbody>
+    </table>
+
+    <script>
+        // 弹奏模式
+        let playingMode = false;
+
+        // 半音的顺序关系
+        const chromaticScale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const solfegeDoremi = ['do', 'di', 're', 'ri', 'mi', 'fa', 'fi', 'sol', 'si', 'la', 'li', 'ti'];
+        const solfegeNumbers = ['1', '#1', '2', '#2', '3', '4', '#4', '5', '#5', '6', '#6', '7'];
+        const octaveSuperscript = ['₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+
+        // 每根弦的空弦音名与八度标记（EADGBE）
+        const openStrings = [
+            { note: 'E', octave: 4 },
+            { note: 'B', octave: 3 },
+            { note: 'G', octave: 3 },
+            { note: 'D', octave: 3 },
+            { note: 'A', octave: 2 },
+            { note: 'E', octave: 2 }
+        ];
+
+        // 获取音名或带八度标记的唱名
+        function getNoteOrSolfegeWithOctave(note, octave, steps, mode, notation) {
+            const currentIndex = chromaticScale.indexOf(note);
+            const nextIndex = (currentIndex + steps) % chromaticScale.length;
+            const nextOctave = octave + Math.floor((currentIndex + steps) / chromaticScale.length);
+
+            if (mode === 'notes') {
+                return `${chromaticScale[nextIndex]}${nextOctave}`;
+            } else if (mode === 'solfege') {
+                const solfege = notation === 'doremi' ? solfegeDoremi : solfegeNumbers;
+                return `${solfege[nextIndex]}${octaveSuperscript[nextOctave] || ''}`;
+            }
+        }
+
+        // 更新表头内容
+        function updateTableHeader(fretCount) {
+            const headerRow = document.getElementById('tableHeader');
+            // headerRow.innerHTML = '<th>弦</th>';
+            headerRow.innerHTML = '<th></th>';
+            for (let fret = 0; fret < fretCount; fret++) {
+                const th = document.createElement('th');
+                // th.textContent = `第${fret + 1}品`;
+                th.textContent = fret + 1;
+                headerRow.appendChild(th);
+            }
+        }
+
+        // 更新表格内容
+        function updateTable() {
+            const fretCount = parseInt(document.getElementById('fretCount').value, 10) || 24;
+            const mode = document.getElementById('modeSelect').value;
+            const notation = document.querySelector('input[name="notation"]:checked').value;
+
+            updateTableHeader(fretCount);
+
+            const tableBody = document.querySelector('#guitarTable tbody');
+            tableBody.innerHTML = '';
+
+            openStrings.forEach((openString, index) => {
+                const tr = document.createElement('tr');
+                // tr.innerHTML = `<td>第${index + 1}弦</td>`;
+                tr.innerHTML = `<td>${index + 1}</td>`;
+
+                for (let fret = 0; fret < fretCount; fret++) {
+                    const td = document.createElement('td');
+                    const noteOrSolfege = getNoteOrSolfegeWithOctave(openString.note, openString.octave, fret, mode, notation);
+
+                    // 播放声音
+                    const noteIndex = (chromaticScale.indexOf(openString.note) + fret) % chromaticScale.length;
+                    const octaveOffset = Math.floor((chromaticScale.indexOf(openString.note) + fret) / chromaticScale.length);
+                    const note = chromaticScale[noteIndex];
+                    const octave = openString.octave + octaveOffset;
+                    const frequency = calculateFrequency(note, octave);
+
+                    td.textContent = `${note}${octave}`;
+                    td.onclick = () => playSound(frequency); // 点击播放声音
+                    if (playingMode) {
+                        // td.style.width = "14vh"
+                        td.style.height = "14vh"
+                    } else {
+                        td.style.width = undefined
+                        td.style.height = undefined
+                    }
+
+                    // 添加背景颜色
+                    if (fret === 12) {
+                        td.classList.add('highlight-pink');
+                    } else if ([3, 5, 7, 9, 15, 17, 19, 21, 24].includes(fret)) {
+                        td.classList.add('highlight-lightblue');
+                    }
+
+                    td.textContent = noteOrSolfege;
+                    tr.appendChild(td);
+                }
+
+                tableBody.appendChild(tr);
+            });
+
+            const table = document.getElementsByTagName("table")[0];
+            if (playingMode) {
+                table.style.width = 14 * (fretCount + 1) * 2.5 + "vh"
+            } else {
+                table.style.width = "100%"
+            }
+        }
+
+        let changeModeBtn = document.getElementById("mode");
+        changeModeBtn.onclick = function () {
+            playingMode = !playingMode;
+            if (playingMode) {
+                changeModeBtn.textContent = "查看模式";
+            } else {
+                changeModeBtn.textContent = "弹奏模式";
+            }
+            updateTable()
+        }
+
+        // 播放音频
+        const baseFrequency = 440; // A4的频率
+
+        // 计算音符频率
+        function calculateFrequency(note, octave) {
+            const noteIndex = chromaticScale.indexOf(note);
+            const A4Index = chromaticScale.indexOf('A') + (4 * 12); // A4为参考点
+            const currentIndex = noteIndex + (octave * 12);
+            const semitoneDistance = currentIndex - A4Index;
+            return baseFrequency * Math.pow(2, semitoneDistance / 12);
+        }
+
+        // 播放声音
+        function playSound(frequency) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = 'sine'; // 正弦波
+            oscillator.frequency.value = frequency; // 设置频率
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.05, audioContext.currentTime + 1); // 渐弱
+            oscillator.stop(audioContext.currentTime + 1); // 1秒后停止
+        }
+
+
+        // 页面加载时生成表格
+        updateTable();
+    </script>
+</body>
+
+</html>
