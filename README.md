@@ -8,7 +8,7 @@
 v0.5.1
 [源码](https://github.com/Bili345679/guitar_notes/blob/main/src/v0.5.1.html)
 增加弹奏模式与展示模式切换按钮
-![v0.5.1预览图](https://github.com/Bili345679/guitar_notes/blob/main/preview/v0.5.1.jpg)
+![v0.5.1预览图](https://github.com/Bili345679/guitar_notes/blob/main/preview/guitar_notes_v_0.5.1.jpg)
 
 v0.5
 [源码](https://github.com/Bili345679/guitar_notes/blob/main/src/v0.5.html)
